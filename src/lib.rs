@@ -12,14 +12,6 @@ impl Vector {
     pub fn magnitude_squared(self) -> Float {
         self.x * self.x + self.y * self.y
     }
-
-    pub fn msqrd(v: &[Vector], m: &mut [Float]) {
-        v.iter()
-            .zip(m.iter_mut())
-            .for_each(|(v, m)| {
-                *m = v.magnitude_squared();
-            });
-    }
 }
 
 impl AddAssign for Vector {
