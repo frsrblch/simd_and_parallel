@@ -1,7 +1,7 @@
 use criterion::*;
 use simd_and_parallel::*;
 
-const N: usize = 500_000;
+const N: usize = 5_000;
 
 fn scalar_magnitude_squared(c: &mut Criterion) {
     let x = (0..).into_iter()

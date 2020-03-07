@@ -3,12 +3,12 @@ pub use packed_simd::f64x2;
 
 
 pub fn magnitude_squared(x: &[f64], y: &[f64], m: &mut [f64]) {
-//    #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
-//    {
-//        if is_x86_feature_detected!("avx2") {
-//            return unsafe { magnitude_squared_avx2(x, y, m); }
-//        }
-//    }
+   #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+   {
+       if is_x86_feature_detected!("avx2") {
+           return unsafe { magnitude_squared_avx2(x, y, m); }
+       }
+   }
 
     return magnitude_squared_fallback(x, y, m);
 }
