@@ -74,6 +74,18 @@ pub struct Vectors {
     pub val: Vec<Vector>,
 }
 
+impl Vectors {
+    pub fn get_from(&mut self, indices: &Vec<usize>, values: &Vectors) {
+        self.val.iter_mut()
+            .zip(indices.iter())
+            .for_each(|(v, i)| {
+                if let Some(val) = values.val.get(*i) {
+                    *v = *val;
+                }
+            });
+    }
+}
+
 impl AddAssign<&Self> for Vectors {
     fn add_assign(&mut self, rhs: &Vectors) {
         self.val.iter_mut()
@@ -138,6 +150,19 @@ impl Vec2 {
                 if let Some(val) = values.y.get(*i) {
                     *y = *val;
                 }
+            });
+    }
+}
+
+impl AddAssign<(&Self, Float)> for Vec2 {
+    fn add_assign(&mut self, (rhs, f): (&Vec2, Float)) {
+        self.x.iter_mut()
+            .zip(self.y.iter_mut())
+            .zip(rhs.x.iter())
+            .zip(rhs.y.iter())
+            .for_each(|(((x1, y1), x2), y2)| {
+                *x1 += *x2 * f;
+                *y1 += *y2 * f;
             });
     }
 }

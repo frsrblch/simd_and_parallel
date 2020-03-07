@@ -2,7 +2,7 @@ use criterion::*;
 use oorandom::Rand64;
 use simd_and_parallel::*;
 
-const N: usize = 50_000;
+const N: usize = 5_000;
 
 fn get_floats_vec() -> Vec<(Float, Float)> {
     (0..).into_iter()
@@ -50,7 +50,7 @@ fn vec2_add_assign(c: &mut Criterion) {
 }
 
 const ATTRACTORS: usize = 100;
-const BODIES: usize = 5000;
+const BODIES: usize = 50_000;
 
 fn get_vec2(rng: &mut Rand64, n: usize) -> Vec2 {
     (0..n)
@@ -109,13 +109,9 @@ fn vec2_gravity(c: &mut Criterion) {
     c.bench_function(
         "vec2 gravity",
         |b| b.iter(|| {
-            // GET PARENT POSITION
             parent_pos.get_from(&body_att, &att_pos);
-
-            // GET PARENT MASS
             parent_mass.get_from(&body_att, &att_mass);
 
-            // CALCULATE FORCE DUE TO GRAVITY
             parent_pos -= &body_pos;
 
             body_vel.x.iter_mut()
@@ -161,12 +157,9 @@ fn vector_gravity(c: &mut Criterion) {
             body_vel.val.iter_mut()
                 .zip(body_pos.val.iter())
                 .zip(body_att.iter())
-                // .zip(parent_pos.val.iter())
-                // .zip(parent_mass.iter())
                 .filter_map(|((v, p), a)| {
                     let p_pos = *att_pos.val.get(*a)? - *p;
                     let pm = *att_mass.val.get(*a)?;
-
                     Some((v, p_pos, pm))
                 })
                 .for_each(|(bv, p_pos, pm)| {
@@ -176,6 +169,66 @@ fn vector_gravity(c: &mut Criterion) {
                     let a = G * DT * pm / dist_squared;
                     *bv += u * a;
                 })
+        })
+    );
+}
+
+fn get_empty_vector(n: usize) -> Vectors {
+    Vectors {
+        val: (0..n).into_iter().map(|_| Vector::default()).collect()
+    }
+}
+
+fn vec2_movement(c: &mut Criterion) {
+    let mut rng = Rand64::new(0);
+
+    let mut pos = get_vec2(&mut rng, BODIES);
+    let vel = get_vec2(&mut rng, BODIES);
+
+    c.bench_function(
+        "vec2 movement",
+        |b| b.iter(|| {
+            pos.x.iter_mut()
+                .zip(vel.x.iter())
+                .for_each(|(p, v)| {
+                    *p += *v * DT;
+                });
+
+            pos.y.iter_mut()
+                .zip(vel.y.iter())
+                .for_each(|(p, v)| {
+                    *p += *v * DT;
+                });
+        })
+    );
+}
+
+fn vec2_movement_refined(c: &mut Criterion) {
+    let mut rng = Rand64::new(0);
+
+    let mut pos = get_vec2(&mut rng, BODIES);
+    let vel = get_vec2(&mut rng, BODIES);
+
+    c.bench_function(
+        "vec2 movement refined",
+        |b| b.iter(|| pos += (&vel, DT))
+    );
+}
+
+fn vector_movement(c: &mut Criterion) {
+    let mut rng = Rand64::new(0);
+
+    let mut pos = get_vector(&mut rng, BODIES);
+    let vel = get_vector(&mut rng, BODIES);
+
+    c.bench_function(
+        "vector movement",
+        |b| b.iter(|| {
+            pos.val.iter_mut()
+                .zip(vel.val.iter())
+                .for_each(|(p, v)| {
+                    *p += *v * DT;
+                });
         })
     );
 }
@@ -192,7 +245,15 @@ criterion_group!(
     vector_gravity,
 );
 
+criterion_group!(
+    movement,
+    vec2_movement,
+    vec2_movement_refined,
+    vector_movement,
+);
+
 criterion_main! {
     add_assign,
     gravity,
+    movement,
 }
