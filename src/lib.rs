@@ -294,13 +294,11 @@ impl Vec3 {
 
 impl AddAssign<&Self> for Vec3 {
     fn add_assign(&mut self, rhs: &Vec3) {
-        izip!(self.iter_mut(), rhs.iter())
-            .for_each(|(lhs, rhs)| {
-                izip!(lhs, rhs)
-                    .for_each(|(lhs, rhs)| {
-                        *lhs += *rhs;
-                    })
-            });
+        for (lhs, rhs) in izip!(self.iter_mut(), rhs.iter()) {
+            for (lhs, rhs) in izip!(lhs.iter_mut(), rhs.iter()) {
+                *lhs += *rhs;
+            }
+        }
     }
 }
 
