@@ -8,15 +8,17 @@ const BODIES: usize = 5_000;
 
 criterion_main! {
     add_assign,
-    gravity,
-    movement,
-    add_assign_mul,
+//    gravity,
+//    movement,
+//    add_assign_mul,
 }
 
 criterion_group!(
     add_assign,
     vectors_add_assign,
     vec2_add_assign,
+    vec3_add_assign,
+    vectors3_add_assign,
 );
 
 fn get_floats_vec() -> Vec<(Float, Float)> {
@@ -64,6 +66,34 @@ fn vec2_add_assign(c: &mut Criterion) {
     );
 }
 
+fn vec3_add_assign(c: &mut Criterion) {
+    let rng = &mut Rand64::new(0);
+
+    let mut lhs = get_vec3(rng, N);
+    let rhs = get_vec3(rng, N);
+
+    c.bench_function(
+        "vec3 add assign",
+        |b| b.iter(|| {
+            lhs += &rhs;
+        })
+    );
+}
+
+fn vectors3_add_assign(c: &mut Criterion) {
+    let rng = &mut Rand64::new(0);
+
+    let mut lhs = get_vectors3(rng, N);
+    let rhs = get_vectors3(rng, N);
+
+    c.bench_function(
+        "vectors3 add assign",
+        |b| b.iter(|| {
+            lhs += &rhs;
+        })
+    );
+}
+
 fn get_vec2(rng: &mut Rand64, n: usize) -> Vec2 {
     (0..n)
         .into_iter()
@@ -80,6 +110,36 @@ fn get_vec(rng: &mut Rand64, n: usize) -> Vec1 {
             .into_iter()
             .map(|_| rng.rand_float() as Float)
             .collect()
+    }
+}
+
+fn get_vec3(rng: &mut Rand64, n: usize) -> Vec3 {
+    Vec3 {
+        x: get_floats(rng, n),
+        y: get_floats(rng, n),
+        z: get_floats(rng, n),
+    }
+}
+
+fn get_floats(rng: &mut Rand64, n: usize) -> Vec<Float> {
+    std::iter::repeat_with(|| rng.rand_float() as Float)
+        .take(n)
+        .collect()
+}
+
+fn get_vectors3(rng: &mut Rand64, n: usize) -> Vectors3 {
+    Vectors3 {
+        val: std::iter::repeat_with(|| get_vector3(rng))
+            .take(n)
+            .collect()
+    }
+}
+
+fn get_vector3(rng: &mut Rand64) -> Vector3 {
+    Vector3 {
+        x: rng.rand_float() as Float,
+        y: rng.rand_float() as Float,
+        z: rng.rand_float() as Float,
     }
 }
 

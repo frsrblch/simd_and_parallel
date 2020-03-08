@@ -1,9 +1,10 @@
+#[macro_use] extern crate itertools;
 use std::ops::*;
 use crate::types::VMul;
 
 pub mod types;
 
-pub type Float = f64;
+pub type Float = f32;
 
 #[derive(Debug, Default, Clone, PartialEq)]
 pub struct Vec1 {
@@ -266,6 +267,69 @@ impl SubAssign<&Self> for Vectors {
             .for_each(|(s, r)| {
                 *s -= *r;
             })
+    }
+}
+
+#[derive(Debug, Default, Clone)]
+pub struct Vec3 {
+    pub x: Vec<Float>,
+    pub y: Vec<Float>,
+    pub z: Vec<Float>,
+}
+
+use std::iter::once;
+impl Vec3 {
+    fn iter_mut(&mut self) -> impl Iterator<Item=&mut [Float]> {
+        once(self.x.as_mut_slice())
+            .chain(once(self.y.as_mut_slice()))
+            .chain(once(self.z.as_mut_slice()))
+    }
+
+    fn iter(&self) -> impl Iterator<Item=&[Float]> {
+        once(self.x.as_slice())
+            .chain(once(self.y.as_slice()))
+            .chain(once(self.z.as_slice()))
+    }
+}
+
+impl AddAssign<&Self> for Vec3 {
+    fn add_assign(&mut self, rhs: &Vec3) {
+        izip!(self.iter_mut(), rhs.iter())
+            .for_each(|(lhs, rhs)| {
+                izip!(lhs, rhs)
+                    .for_each(|(lhs, rhs)| {
+                        *lhs += *rhs;
+                    })
+            });
+    }
+}
+
+#[derive(Debug, Default, Clone)]
+pub struct Vectors3 {
+    pub val: Vec<Vector3>,
+}
+
+impl AddAssign<&Self> for Vectors3 {
+    fn add_assign(&mut self, rhs: &Vectors3) {
+        izip!(self.val.iter_mut(), rhs.val.iter())
+            .for_each(|(lhs, rhs)| {
+                *lhs += *rhs;
+            })
+    }
+}
+
+#[derive(Debug, Default, Copy, Clone)]
+pub struct Vector3 {
+    pub x: Float,
+    pub y: Float,
+    pub z: Float,
+}
+
+impl AddAssign for Vector3 {
+    fn add_assign(&mut self, rhs: Self) {
+        self.x += rhs.x;
+        self.y += rhs.y;
+        self.z += rhs.z;
     }
 }
 
