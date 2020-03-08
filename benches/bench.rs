@@ -1,8 +1,11 @@
 use criterion::*;
 use oorandom::Rand64;
 use simd_and_parallel::*;
+use simd_and_parallel::types::VMul;
 
 const N: usize = 5_000;
+const ATTRACTORS: usize = 100;
+const BODIES: usize = 5_000;
 
 fn get_floats_vec() -> Vec<(Float, Float)> {
     (0..).into_iter()
@@ -48,9 +51,6 @@ fn vec2_add_assign(c: &mut Criterion) {
         })
     );
 }
-
-const ATTRACTORS: usize = 100;
-const BODIES: usize = 50_000;
 
 fn get_vec2(rng: &mut Rand64, n: usize) -> Vec2 {
     (0..n)
@@ -211,7 +211,7 @@ fn vec2_movement_refined(c: &mut Criterion) {
 
     c.bench_function(
         "vec2 movement refined",
-        |b| b.iter(|| pos += (&vel, DT))
+        |b| b.iter(|| pos += &vel * DT)
     );
 }
 
@@ -229,6 +229,64 @@ fn vector_movement(c: &mut Criterion) {
                 .for_each(|(p, v)| {
                     *p += *v * DT;
                 });
+        })
+    );
+}
+
+fn vec2_add_assign_mul(c: &mut Criterion) {
+    let mut rng = Rand64::new(0);
+
+    let mut pos = get_vec2(&mut rng, BODIES);
+    let vec2 = get_vec2(&mut rng, BODIES);
+    let vec1 = get_vec(&mut rng, BODIES);
+
+    c.bench_function(
+        "vec2 add assign mul",
+        |b| b.iter(|| {
+            pos.x.iter_mut()
+                .zip(pos.y.iter_mut())
+                .zip(vec2.x.iter())
+                .zip(vec2.y.iter())
+                .zip(vec1.val.iter())
+                .for_each(|((((x1, y1), x2), y2), n)| {
+                    *x1 += *x2 * *n;
+                    *y1 += *y2 * *n;
+                });
+        })
+    );
+}
+
+fn vec2_add_assign_mul_refined(c: &mut Criterion) {
+    let mut rng = Rand64::new(0);
+
+    let mut pos = get_vec2(&mut rng, BODIES);
+    let vec2 = get_vec2(&mut rng, BODIES);
+    let vec1 = get_vec(&mut rng, BODIES);
+
+    c.bench_function(
+        "vec2 add assign mul refined",
+        |b| b.iter(|| {
+            pos += &vec2 * &vec1;
+        })
+    );
+}
+
+fn vector_add_assign_mul(c: &mut Criterion) {
+    let mut rng = Rand64::new(0);
+
+    let mut pos = get_vector(&mut rng, BODIES);
+    let vec2 = get_vector(&mut rng, BODIES);
+    let vec1 = get_vec(&mut rng, BODIES);
+
+    c.bench_function(
+        "vector add assign mul",
+        |b| b.iter(|| {
+            pos.val.iter_mut()
+                .zip(vec2.val.iter())
+                .zip(vec1.val.iter())
+                .for_each(|((a, b), c)| {
+                    *a += *b * *c;
+                })
         })
     );
 }
@@ -252,8 +310,16 @@ criterion_group!(
     vector_movement,
 );
 
+criterion_group!(
+    add_assign_mul,
+    vec2_add_assign_mul,
+    vec2_add_assign_mul_refined,
+    vector_add_assign_mul,
+);
+
 criterion_main! {
     add_assign,
     gravity,
     movement,
+    add_assign_mul,
 }

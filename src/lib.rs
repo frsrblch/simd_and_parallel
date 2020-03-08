@@ -1,6 +1,177 @@
 use std::ops::*;
+use crate::types::VMul;
 
-pub type Float = f32;
+pub mod types;
+
+pub type Float = f64;
+
+#[derive(Debug, Default, Clone, PartialEq)]
+pub struct Vec1 {
+    pub val: Vec<Float>,
+}
+
+impl Vec1 {
+    pub fn get_from(&mut self, indices: &Vec<usize>, values: &Vec1) {
+        self.val.iter_mut()
+            .zip(indices.iter())
+            .for_each(|(v, i)| {
+                if let Some(val) = values.val.get(*i) {
+                    *v = *val;
+                }
+            });
+    }
+
+    pub fn get_magnitude(&mut self, vec: &Vec2) {
+        self.val.iter_mut()
+            .zip(vec.x.iter())
+            .zip(vec.y.iter())
+            .for_each(|((v, x), y)| {
+                *v = ((*x * *x) + (*y * *y)).sqrt();
+            })
+    }
+}
+
+#[derive(Debug, Default, Clone, PartialEq)]
+pub struct Vec2 {
+    pub x: Vec<Float>,
+    pub y: Vec<Float>,
+}
+
+impl<'a> Mul<Float> for &'a Vec2 {
+    type Output = VMul<&'a Vec2, Float>;
+
+    fn mul(self, rhs: Float) -> Self::Output {
+        types::VMul(self, rhs)
+    }
+}
+
+impl<'a> Mul<&'a Vec1> for &'a Vec2 {
+    type Output = VMul<&'a Vec2, &'a Vec1>;
+
+    fn mul(self, rhs: &'a Vec1) -> Self::Output {
+        types::VMul(self, rhs)
+    }
+}
+
+impl<'a> AddAssign<VMul<&'a Self, Float>> for Vec2 {
+    fn add_assign(&mut self, rhs: VMul<&'a Vec2, Float>) {
+        self.x.iter_mut()
+            .zip(self.y.iter_mut())
+            .zip(rhs.0.x.iter())
+            .zip(rhs.0.y.iter())
+            .for_each(|(((x1, y1), x2), y2)| {
+                *x1 += *x2 * rhs.1;
+                *y1 += *y2 * rhs.1;
+            })
+    }
+}
+
+impl<'a> AddAssign<VMul<&'a Self, &'a Vec1>> for Vec2 {
+    fn add_assign(&mut self, rhs: VMul<&'a Vec2, &'a Vec1>) {
+        self.x.iter_mut()
+            .zip(self.y.iter_mut())
+            .zip(rhs.0.x.iter())
+            .zip(rhs.0.y.iter())
+            .zip(rhs.1.val.iter())
+            .for_each(|((((x1, y1), x2), y2), x)| {
+                *x1 += *x2 * *x;
+                *y1 += *y2 * *x;
+            })
+    }
+}
+
+impl Vec2 {
+    pub fn get_from(&mut self, indices: &Vec<usize>, values: &Vec2) {
+        self.x.iter_mut()
+            .zip(self.y.iter_mut())
+            .zip(indices.iter())
+            .for_each(|((x, y), i)| {
+                if let Some(val) = values.x.get(*i) {
+                    *x = *val;
+                }
+                if let Some(val) = values.y.get(*i) {
+                    *y = *val;
+                }
+            });
+    }
+}
+
+impl AddAssign<(&Self, Float)> for Vec2 {
+    fn add_assign(&mut self, (rhs, f): (&Vec2, Float)) {
+        self.x.iter_mut()
+            .zip(self.y.iter_mut())
+            .zip(rhs.x.iter())
+            .zip(rhs.y.iter())
+            .for_each(|(((x1, y1), x2), y2)| {
+                *x1 += *x2 * f;
+                *y1 += *y2 * f;
+            });
+    }
+}
+
+impl AddAssign<&Self> for Vec2 {
+    fn add_assign(&mut self, rhs: &Vec2) {
+        self.x.iter_mut()
+            .zip(rhs.x.iter())
+            .for_each(|(s, r)| {
+                *s += *r;
+            });
+
+        self.y.iter_mut()
+            .zip(rhs.y.iter())
+            .for_each(|(s, r)| {
+                *s += *r;
+            });
+    }
+}
+
+impl SubAssign<&Self> for Vec2 {
+    fn sub_assign(&mut self, rhs: &Vec2) {
+        self.x.iter_mut()
+            .zip(rhs.x.iter())
+            .for_each(|(s, r)| {
+                *s -= *r;
+            });
+
+        self.y.iter_mut()
+            .zip(rhs.y.iter())
+            .for_each(|(s, r)| {
+                *s -= *r;
+            });
+    }
+}
+
+impl MulAssign<&Vec1> for Vec2 {
+    fn mul_assign(&mut self, rhs: &Vec1) {
+        self.x.iter_mut()
+            .zip(rhs.val.iter())
+            .for_each(|(s, r)| {
+                *s *= *r;
+            });
+
+        self.y.iter_mut()
+            .zip(rhs.val.iter())
+            .for_each(|(s, r)| {
+                *s *= *r;
+            });
+    }
+}
+
+impl DivAssign<&Vec1> for Vec2 {
+    fn div_assign(&mut self, rhs: &Vec1) {
+        self.x.iter_mut()
+            .zip(rhs.val.iter())
+            .for_each(|(s, r)| {
+                *s /= *r;
+            });
+
+        self.y.iter_mut()
+            .zip(rhs.val.iter())
+            .for_each(|(s, r)| {
+                *s /= *r;
+            });
+    }
+}
 
 #[derive(Debug, Default, Copy, Clone, PartialEq)]
 pub struct Vector {
@@ -95,131 +266,6 @@ impl SubAssign<&Self> for Vectors {
             .for_each(|(s, r)| {
                 *s -= *r;
             })
-    }
-}
-
-#[derive(Debug, Default, Clone, PartialEq)]
-pub struct Vec1 {
-    pub val: Vec<Float>,
-}
-
-impl Vec1 {
-    pub fn get_from(&mut self, indices: &Vec<usize>, values: &Vec1) {
-        self.val.iter_mut()
-            .zip(indices.iter())
-            .for_each(|(v, i)| {
-                if let Some(val) = values.val.get(*i) {
-                    *v = *val;
-                }
-            });
-    }
-
-    pub fn get_magnitude(&mut self, vec: &Vec2) {
-        self.val.iter_mut()
-            .zip(vec.x.iter())
-            .zip(vec.y.iter())
-            .for_each(|((v, x), y)| {
-                *v = ((*x * *x) + (*y * *y)).sqrt();
-            })
-    }
-}
-
-#[derive(Debug, Default, Clone, PartialEq)]
-pub struct Vec2 {
-    pub x: Vec<Float>,
-    pub y: Vec<Float>,
-}
-
-impl Vec2 {
-    pub fn get_from(&mut self, indices: &Vec<usize>, values: &Vec2) {
-        self.x.iter_mut()
-            .zip(self.y.iter_mut())
-            .zip(indices.iter())
-            .for_each(|((x, y), i)| {
-                if let Some(val) = values.x.get(*i) {
-                    *x = *val;
-                }
-                if let Some(val) = values.y.get(*i) {
-                    *y = *val;
-                }
-            });
-    }
-}
-
-impl AddAssign<(&Self, Float)> for Vec2 {
-    fn add_assign(&mut self, (rhs, f): (&Vec2, Float)) {
-        self.x.iter_mut()
-            .zip(self.y.iter_mut())
-            .zip(rhs.x.iter())
-            .zip(rhs.y.iter())
-            .for_each(|(((x1, y1), x2), y2)| {
-                *x1 += *x2 * f;
-                *y1 += *y2 * f;
-            });
-    }
-}
-
-impl AddAssign<&Self> for Vec2 {
-    fn add_assign(&mut self, rhs: &Vec2) {
-        self.x.iter_mut()
-            .zip(rhs.x.iter())
-            .for_each(|(s, r)| {
-                *s += *r;
-            });
-
-        self.y.iter_mut()
-            .zip(rhs.y.iter())
-            .for_each(|(s, r)| {
-                *s += *r;
-            });
-    }
-}
-
-impl SubAssign<&Self> for Vec2 {
-    fn sub_assign(&mut self, rhs: &Vec2) {
-        self.x.iter_mut()
-            .zip(rhs.x.iter())
-            .for_each(|(s, r)| {
-                *s -= *r;
-            });
-
-        self.y.iter_mut()
-            .zip(rhs.y.iter())
-            .for_each(|(s, r)| {
-                *s -= *r;
-            });
-    }
-}
-
-impl MulAssign<&Vec1> for Vec2 {
-    fn mul_assign(&mut self, rhs: &Vec1) {
-        self.x.iter_mut()
-            .zip(rhs.val.iter())
-            .for_each(|(s, r)| {
-                *s *= *r;
-            });
-
-        self.y.iter_mut()
-            .zip(rhs.val.iter())
-            .for_each(|(s, r)| {
-                *s *= *r;
-            });
-    }
-}
-
-impl DivAssign<&Vec1> for Vec2 {
-    fn div_assign(&mut self, rhs: &Vec1) {
-        self.x.iter_mut()
-            .zip(rhs.val.iter())
-            .for_each(|(s, r)| {
-                *s /= *r;
-            });
-
-        self.y.iter_mut()
-            .zip(rhs.val.iter())
-            .for_each(|(s, r)| {
-                *s /= *r;
-            });
     }
 }
 
