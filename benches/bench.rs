@@ -1,11 +1,23 @@
 use criterion::*;
 use oorandom::Rand64;
 use simd_and_parallel::*;
-use simd_and_parallel::types::VMul;
 
 const N: usize = 5_000;
 const ATTRACTORS: usize = 100;
 const BODIES: usize = 5_000;
+
+criterion_main! {
+    add_assign,
+    gravity,
+    movement,
+    add_assign_mul,
+}
+
+criterion_group!(
+    add_assign,
+    vectors_add_assign,
+    vec2_add_assign,
+);
 
 fn get_floats_vec() -> Vec<(Float, Float)> {
     (0..).into_iter()
@@ -91,6 +103,12 @@ fn get_empty_vec(n: usize) -> Vec1 {
     }
 }
 
+criterion_group!(
+    gravity,
+    vec2_gravity,
+    vector_gravity,
+);
+
 const G: Float = 6.674e-11;
 const DT: Float = 0.1;
 
@@ -173,11 +191,12 @@ fn vector_gravity(c: &mut Criterion) {
     );
 }
 
-fn get_empty_vector(n: usize) -> Vectors {
-    Vectors {
-        val: (0..n).into_iter().map(|_| Vector::default()).collect()
-    }
-}
+criterion_group!(
+    movement,
+    vec2_movement,
+    vec2_movement_refined,
+    vector_movement,
+);
 
 fn vec2_movement(c: &mut Criterion) {
     let mut rng = Rand64::new(0);
@@ -232,6 +251,13 @@ fn vector_movement(c: &mut Criterion) {
         })
     );
 }
+
+criterion_group!(
+    add_assign_mul,
+    vec2_add_assign_mul,
+    vec2_add_assign_mul_refined,
+    vector_add_assign_mul,
+);
 
 fn vec2_add_assign_mul(c: &mut Criterion) {
     let mut rng = Rand64::new(0);
@@ -289,37 +315,4 @@ fn vector_add_assign_mul(c: &mut Criterion) {
                 })
         })
     );
-}
-
-criterion_group!(
-    add_assign,
-    vectors_add_assign,
-    vec2_add_assign,
-);
-
-criterion_group!(
-    gravity,
-    vec2_gravity,
-    vector_gravity,
-);
-
-criterion_group!(
-    movement,
-    vec2_movement,
-    vec2_movement_refined,
-    vector_movement,
-);
-
-criterion_group!(
-    add_assign_mul,
-    vec2_add_assign_mul,
-    vec2_add_assign_mul_refined,
-    vector_add_assign_mul,
-);
-
-criterion_main! {
-    add_assign,
-    gravity,
-    movement,
-    add_assign_mul,
 }
