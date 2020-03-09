@@ -290,14 +290,66 @@ impl Vec3 {
             .chain(once(self.y.as_slice()))
             .chain(once(self.z.as_slice()))
     }
+
+    fn do_for_all<F: Fn(&mut Float, Float)>(&mut self, rhs: &Vec3, f: F) {
+        self.iter_mut()
+            .zip(rhs.iter())
+            .flat_map(|(l, r)| l.iter_mut().zip(r.iter()))
+            .for_each(|(l, r)| f(l, *r));
+    }
+
+    fn do_for_each<F: Fn(&mut Float, Float)>(&mut self, rhs: Float, f: F) {
+        self.iter_mut()
+            .flat_map(|values| values.iter_mut())
+            .for_each(|value| f(value, rhs));
+    }
 }
 
 impl AddAssign<&Self> for Vec3 {
     fn add_assign(&mut self, rhs: &Vec3) {
-        self.iter_mut()
-            .zip(rhs.iter())
-            .flat_map(|(l, r)| l.iter_mut().zip(r.iter()))
-            .for_each(|(l, r)| *l += *r);
+        self.do_for_all(rhs, Float::add_assign);
+    }
+}
+
+impl AddAssign<Float> for Vec3 {
+    fn add_assign(&mut self, rhs: Float) {
+        self.do_for_each(rhs, Float::add_assign);
+    }
+}
+
+impl SubAssign<&Self> for Vec3 {
+    fn sub_assign(&mut self, rhs: &Vec3) {
+        self.do_for_all(rhs, Float::sub_assign);
+    }
+}
+
+impl SubAssign<Float> for Vec3 {
+    fn sub_assign(&mut self, rhs: Float) {
+        self.do_for_each(rhs, Float::sub_assign);
+    }
+}
+
+impl MulAssign<&Self> for Vec3 {
+    fn mul_assign(&mut self, rhs: &Vec3) {
+        self.do_for_all(rhs, Float::mul_assign);
+    }
+}
+
+impl MulAssign<Float> for Vec3 {
+    fn mul_assign(&mut self, rhs: Float) {
+        self.do_for_each(rhs, Float::mul_assign);
+    }
+}
+
+impl DivAssign<&Self> for Vec3 {
+    fn div_assign(&mut self, rhs: &Vec3) {
+        self.do_for_all(rhs, Float::div_assign);
+    }
+}
+
+impl DivAssign<Float> for Vec3 {
+    fn div_assign(&mut self, rhs: Float) {
+        self.do_for_each(rhs, Float::div_assign);
     }
 }
 
