@@ -7,12 +7,12 @@ pub mod types;
 pub type Float = f32;
 
 #[derive(Debug, Default, Clone, PartialEq)]
-pub struct Vec1 {
-    pub val: Vec<Float>,
+pub struct Vec1<T> {
+    pub val: Vec<T>,
 }
 
-impl Vec1 {
-    pub fn get_from(&mut self, indices: &Vec<usize>, values: &Vec1) {
+impl<T: Copy> Vec1<T> {
+    pub fn get_from(&mut self, indices: &Vec<usize>, values: &Vec1<T>) {
         self.val.iter_mut()
             .zip(indices.iter())
             .for_each(|(v, i)| {
@@ -21,8 +21,21 @@ impl Vec1 {
                 }
             });
     }
+}
 
-    pub fn get_magnitude(&mut self, vec: &Vec2) {
+impl Vec1<f32> {
+    pub fn get_magnitude(&mut self, vec: &Vec2<f32>) {
+        self.val.iter_mut()
+            .zip(vec.x.iter())
+            .zip(vec.y.iter())
+            .for_each(|((v, x), y)| {
+                *v = ((*x * *x) + (*y * *y)).sqrt();
+            })
+    }
+}
+
+impl Vec1<f64> {
+    pub fn get_magnitude(&mut self, vec: &Vec2<f64>) {
         self.val.iter_mut()
             .zip(vec.x.iter())
             .zip(vec.y.iter())
@@ -33,29 +46,29 @@ impl Vec1 {
 }
 
 #[derive(Debug, Default, Clone, PartialEq)]
-pub struct Vec2 {
-    pub x: Vec<Float>,
-    pub y: Vec<Float>,
+pub struct Vec2<T> {
+    pub x: Vec<T>,
+    pub y: Vec<T>,
 }
 
-impl<'a> Mul<Float> for &'a Vec2 {
-    type Output = VMul<&'a Vec2, Float>;
+impl<'a, T> Mul<T> for &'a Vec2<T> {
+    type Output = VMul<&'a Vec2<T>, T>;
 
-    fn mul(self, rhs: Float) -> Self::Output {
+    fn mul(self, rhs: T) -> Self::Output {
         types::VMul(self, rhs)
     }
 }
 
-impl<'a> Mul<&'a Vec1> for &'a Vec2 {
-    type Output = VMul<&'a Vec2, &'a Vec1>;
+impl<'a, T> Mul<&'a Vec1<T>> for &'a Vec2<T> {
+    type Output = VMul<&'a Vec2<T>, &'a Vec1<T>>;
 
-    fn mul(self, rhs: &'a Vec1) -> Self::Output {
+    fn mul(self, rhs: &'a Vec1<T>) -> Self::Output {
         types::VMul(self, rhs)
     }
 }
 
-impl<'a> AddAssign<VMul<&'a Self, Float>> for Vec2 {
-    fn add_assign(&mut self, rhs: VMul<&'a Vec2, Float>) {
+impl<'a, T: Copy + Mul<Output=T> + AddAssign> AddAssign<VMul<&'a Self, T>> for Vec2<T> {
+    fn add_assign(&mut self, rhs: VMul<&'a Vec2<T>, T>) {
         self.x.iter_mut()
             .zip(self.y.iter_mut())
             .zip(rhs.0.x.iter())
@@ -67,8 +80,8 @@ impl<'a> AddAssign<VMul<&'a Self, Float>> for Vec2 {
     }
 }
 
-impl<'a> AddAssign<VMul<&'a Self, &'a Vec1>> for Vec2 {
-    fn add_assign(&mut self, rhs: VMul<&'a Vec2, &'a Vec1>) {
+impl<'a, T: Copy + Mul<Output=T> + AddAssign> AddAssign<VMul<&'a Self, &'a Vec1<T>>> for Vec2<T> {
+    fn add_assign(&mut self, rhs: VMul<&'a Vec2<T>, &'a Vec1<T>>) {
         self.x.iter_mut()
             .zip(self.y.iter_mut())
             .zip(rhs.0.x.iter())
@@ -81,8 +94,8 @@ impl<'a> AddAssign<VMul<&'a Self, &'a Vec1>> for Vec2 {
     }
 }
 
-impl Vec2 {
-    pub fn get_from(&mut self, indices: &Vec<usize>, values: &Vec2) {
+impl<T: Copy> Vec2<T> {
+    pub fn get_from(&mut self, indices: &Vec<usize>, values: &Vec2<T>) {
         self.x.iter_mut()
             .zip(self.y.iter_mut())
             .zip(indices.iter())
@@ -97,8 +110,8 @@ impl Vec2 {
     }
 }
 
-impl AddAssign<(&Self, Float)> for Vec2 {
-    fn add_assign(&mut self, (rhs, f): (&Vec2, Float)) {
+impl<T: Copy + AddAssign + Mul<Output=T>> AddAssign<(&Self, T)> for Vec2<T> {
+    fn add_assign(&mut self, (rhs, f): (&Vec2<T>, T)) {
         self.x.iter_mut()
             .zip(self.y.iter_mut())
             .zip(rhs.x.iter())
@@ -110,8 +123,8 @@ impl AddAssign<(&Self, Float)> for Vec2 {
     }
 }
 
-impl AddAssign<&Self> for Vec2 {
-    fn add_assign(&mut self, rhs: &Vec2) {
+impl<T: Copy + AddAssign> AddAssign<&Self> for Vec2<T> {
+    fn add_assign(&mut self, rhs: &Vec2<T>) {
         self.x.iter_mut()
             .zip(rhs.x.iter())
             .for_each(|(s, r)| {
@@ -126,8 +139,8 @@ impl AddAssign<&Self> for Vec2 {
     }
 }
 
-impl SubAssign<&Self> for Vec2 {
-    fn sub_assign(&mut self, rhs: &Vec2) {
+impl<T: Copy + SubAssign> SubAssign<&Self> for Vec2<T> {
+    fn sub_assign(&mut self, rhs: &Vec2<T>) {
         self.x.iter_mut()
             .zip(rhs.x.iter())
             .for_each(|(s, r)| {
@@ -142,8 +155,8 @@ impl SubAssign<&Self> for Vec2 {
     }
 }
 
-impl MulAssign<&Vec1> for Vec2 {
-    fn mul_assign(&mut self, rhs: &Vec1) {
+impl<T: Copy + MulAssign> MulAssign<&Vec1<T>> for Vec2<T> {
+    fn mul_assign(&mut self, rhs: &Vec1<T>) {
         self.x.iter_mut()
             .zip(rhs.val.iter())
             .for_each(|(s, r)| {
@@ -158,8 +171,8 @@ impl MulAssign<&Vec1> for Vec2 {
     }
 }
 
-impl DivAssign<&Vec1> for Vec2 {
-    fn div_assign(&mut self, rhs: &Vec1) {
+impl<T: Copy + DivAssign> DivAssign<&Vec1<T>> for Vec2<T> {
+    fn div_assign(&mut self, rhs: &Vec1<T>) {
         self.x.iter_mut()
             .zip(rhs.val.iter())
             .for_each(|(s, r)| {
