@@ -5,6 +5,7 @@ use crate::types::VMul;
 pub mod types;
 
 pub type Float = f32;
+pub type SimdVector = packed_simd::f32x8;
 
 #[derive(Debug, Default, Clone, PartialEq)]
 pub struct Vec1<T> {
@@ -49,6 +50,18 @@ impl Vec1<f64> {
 pub struct Vec2<T> {
     pub x: Vec<T>,
     pub y: Vec<T>,
+}
+
+impl<T> Vec2<T> {
+    pub fn iter(&self) -> impl Iterator<Item=(&T, &T)> {
+        self.x.iter()
+            .zip(self.y.iter())
+    }
+
+    pub fn iter_mut(&mut self) -> impl Iterator<Item=(&mut T, &mut T)> {
+        self.x.iter_mut()
+            .zip(self.y.iter_mut())
+    }
 }
 
 impl<'a, T> Mul<T> for &'a Vec2<T> {
@@ -194,6 +207,13 @@ pub struct Vector {
 }
 
 impl Vector {
+    pub fn random() -> Self {
+        Self {
+            x: random(),
+            y: random(),
+        }
+    }
+
     pub fn magnitude_squared(self) -> Float {
         self.x * self.x + self.y * self.y
     }
@@ -291,6 +311,8 @@ pub struct Vec3 {
 }
 
 use std::iter::once;
+use rand::random;
+
 impl Vec3 {
     fn iter_mut(&mut self) -> impl Iterator<Item=&mut [Float]> {
         once(self.x.as_mut_slice())
